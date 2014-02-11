@@ -1,0 +1,26 @@
+{
+    "name": "JobQueue/JobQueue",
+    "description": "Asynchronous Message/Job Queue",
+    "minimum-stability": "alpha",
+    "keywords": ["Queue", "Message", "Job"],
+    "homepage": "http://github.com/Seldaek/monolog",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Jens Schwehn",
+            "email": "jens@ldk.net",
+            "homepage": "http://ldk.net"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.0"
+    },
+    "suggest": {
+
+    },
+    "autoload": {
+        "psr-0": {
+            "JobQueue": "src/"
+        }
+    }
+}
