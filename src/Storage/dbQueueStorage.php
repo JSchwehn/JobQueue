@@ -11,13 +11,13 @@
  * Simple storage for the queue messages.
  * Stores the Jobs in a mysql database table. Using the PDO DB abstraction layer
  */
-namespace JobQueue\Storages {
-    use JobQueue\Exception\MissingConfigException;
+namespace JobQueue\Storage {
+    use JobQueue\Exceptions\MissingConfigException;
     use JobQueue\QueueStorage;
 
     class DbQueueStorage implements QueueStorage
     {
-        /** @var PDO */
+        /** @var \PDO */
         private $_db = null;
         private $_config = array();
 
@@ -36,7 +36,7 @@ namespace JobQueue\Storages {
          * - dbOptions options passed to the PDO layer. Only if a DSN is provided.
          *
          * @param array $parameters
-         * @throws \JobQueue\Exception\MissingConfigException
+         * @throws \JobQueue\Exceptions\MissingConfigException
          */
         public function __construct(array $parameters)
         {
@@ -154,11 +154,12 @@ namespace JobQueue\Storages {
         public function getJobsByConsumerName($consumerName)
         {
             $sth = $this->Db()->prepare(
-                "SELECT id, consumerName, command, status, `data` FROM " . $this->queueName() . ' WHERE consumerName=?'
+                "SELECT id, consumerName, command, status, `data` FROM " . $this->getQueueName(
+                ) . ' WHERE consumerName=?'
             );
             $sth->execute(array($consumerName));
             $retVal = array();
-            while ($job = $sth->fetch(PDO::FETCH_ASSOC)) {
+            while ($job = $sth->fetch(\PDO::FETCH_ASSOC)) {
                 $retVal[] = array(
                     'consumerName' => $job['consumerName'],
                     'command' => $job['command'],
@@ -177,11 +178,11 @@ namespace JobQueue\Storages {
         public function getJobsByCommand($command)
         {
             $sth = $this->Db()->prepare(
-                "SELECT id, consumerName, command, status, `data` FROM " . $this->queueName() . ' WHERE command=?'
+                "SELECT id, consumerName, command, status, `data` FROM " . $this->getQueueName() . ' WHERE command=?'
             );
             $sth->execute(array($command));
             $retVal = array();
-            while ($job = $sth->fetch(PDO::FETCH_ASSOC)) {
+            while ($job = $sth->fetch(\PDO::FETCH_ASSOC)) {
                 $retVal[] = array(
                     'consumerName' => $job['consumerName'],
                     'command' => $job['command'],
@@ -199,7 +200,7 @@ namespace JobQueue\Storages {
          */
         public function updateJob($jobId, $parameters = array())
         {
-            $sth = $this->Db()->prepare("UPDATE " . $this->queueName() . " SET `data`=? WHERE id=?");
+            $sth = $this->Db()->prepare("UPDATE " . $this->getQueueName() . " SET `data`=? WHERE id=?");
             if (!$sth->execute(array(json_encode($parameters), $jobId))) {
                 throw new \Exception('Could not update job #' . (int)$jobId);
             }
@@ -214,7 +215,9 @@ namespace JobQueue\Storages {
          */
         public function setJobStatus($jobId, $status = 'new')
         {
-            $sth = $this->Db()->prepare("UPDATE " . $this->QueueName() . " SET `status` = ?, lastError = ? WHERE id=?");
+            $sth = $this->Db()->prepare(
+                "UPDATE " . $this->getQueueName() . " SET `status` = ?, lastError = ? WHERE id=?"
+            );
             if (!$sth->execute(array($status, (int)$jobId))) {
                 throw new \Exception('Could not set error.');
             }
@@ -235,7 +238,7 @@ namespace JobQueue\Storages {
         {
             $sql = "
                 SELECT id, consumerName, command, status, data, errorCount
-                FROM " . $this->queueName() . "
+                FROM " . $this->getQueueName() . "
                 WHERE 1
                     AND lockedAt = '0000-00-00 00:00:00'
                     AND errorCount < ?
@@ -249,7 +252,7 @@ namespace JobQueue\Storages {
             ";
             $sth = $this->Db()->prepare($sql);
             $sth->execute(array($this->_config['maxErrorCount'], '%' . $filter . '%'));
-            $data = $sth->fetch(PDO::FETCH_ASSOC);
+            $data = $sth->fetch(\PDO::FETCH_ASSOC);
             if (!$data) {
                 return false;
             }
@@ -267,7 +270,7 @@ namespace JobQueue\Storages {
          */
         public function getErrorCount($jobId)
         {
-            $sth = $this->Db()->prepare("SELECT errorCount FROM " . $this->queueName() . " WHERE id=?");
+            $sth = $this->Db()->prepare("SELECT errorCount FROM " . $this->getQueueName() . " WHERE id=?");
             $sth->execute(array((int)$jobId));
 
             return (int)$sth->fetchColumn();
@@ -283,7 +286,7 @@ namespace JobQueue\Storages {
         public function increaseError($jobId, $errorMessage = '')
         {
             $sth = $this->Db()->prepare(
-                "UPDATE " . $this->queueName() . " SET errorCount = errorCount+1, lastError = ? WHERE id=?"
+                "UPDATE " . $this->getQueueName() . " SET errorCount = errorCount+1, lastError = ? WHERE id=?"
             );
             if (!$sth->execute(array($errorMessage, (int)$jobId))) {
                 throw new \Exception('Could not set error for job ID: ' . $jobId);
@@ -300,7 +303,7 @@ namespace JobQueue\Storages {
          */
         public function lockElement($jobId)
         {
-            $sth = $this->Db()->prepare("UPDATE " . $this->queueName() . " SET lockedAt = NOW() WHERE id = ?");
+            $sth = $this->Db()->prepare("UPDATE " . $this->getQueueName() . " SET lockedAt = NOW() WHERE id = ?");
             if (!$sth->execute(array((int)$jobId))) {
                 throw new \Exception('Could not lock job ID ' . (int)$jobId);
             }
@@ -315,7 +318,7 @@ namespace JobQueue\Storages {
         public function unlockElement($jobId)
         {
             $sth = $this->Db()->prepare(
-                "UPDATE " . $this->queueName() . " SET lockedAt = '0000-00-00 00:00:00' WHERE id = ?"
+                "UPDATE " . $this->getQueueName() . " SET lockedAt = '0000-00-00 00:00:00' WHERE id = ?"
             );
             if (!$sth->execute(array((int)$jobId))) {
                 throw new \Exception('Could not unlock job ID ' . (int)$jobId);
@@ -330,7 +333,7 @@ namespace JobQueue\Storages {
          */
         public function removeElement($jobId)
         {
-            $sth = $this->Db()->prepare("DELETE FROM " . $this->queueName() . " WHERE id = ? LIMIT 1");
+            $sth = $this->Db()->prepare("DELETE FROM " . $this->getQueueName() . " WHERE id = ? LIMIT 1");
             if (!$sth->execute(array((int)$jobId))) {
                 throw new \Exception('Could not delete job ID ' . (int)$jobId);
             }
@@ -344,7 +347,7 @@ namespace JobQueue\Storages {
          */
         public function garbageCollection()
         {
-            $sth = $this->Db()->prepare("DELETE FROM " . $this->queueName() . " WHERE  expireDate < NOW() ");
+            $sth = $this->Db()->prepare("DELETE FROM " . $this->getQueueName() . " WHERE  expireDate < NOW() ");
             if (!$sth->execute(array())) {
                 throw new \Exception('Could not remove trash from queue');
             }
