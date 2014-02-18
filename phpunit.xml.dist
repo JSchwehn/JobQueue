@@ -5,11 +5,22 @@
         <testsuite name="JobQueue Test Suite">
             <directory>tests/JobQueue/</directory>
         </testsuite>
+
+        <testsuite name="JobQueue Integration Test Suite">
+            <directory>tests/JobQueue/Integration/</directory>
+        </testsuite>
+
+        <testsuite name="JobQueue Regression Test Suite">
+            <directory>tests/JobQueue/Integration/</directory>
+        </testsuite>
+
     </testsuites>
 
     <filter>
         <whitelist>
             <directory suffix=".php">src/JobQueue/</directory>
+            <directory suffix=".php">src/JobQueue/Integration/</directory>
+            <directory suffix=".php">src/JobQueue/Regression/</directory>
         </whitelist>
     </filter>
 
@@ -18,5 +29,6 @@
         <var name="DB_USER" value="testuser"/>
         <var name="DB_PASSWD" value="testuser"/>
         <var name="DB_DBNAME" value="JobQueue"/>
+        <var name="DB_SCHEMA" value="JobQueue"/>
     </php>
 </phpunit>
