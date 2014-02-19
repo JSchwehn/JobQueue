@@ -1,4 +1,12 @@
 <?php
+/*
+ * This file is part of the JobQueue package.
+ *
+ * (c) Jens Schwehn <jens@ldk.net>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 namespace JobQueue\tests;
 
 use JobQueue\JobConsumer;
@@ -71,7 +79,6 @@ class JobConsumerTest extends \PHPUnit_Framework_TestCase
     {
         $store = $this->buildMock(null, __FUNCTION__);
         $store->expects($this->exactly(2))->method('lockElement');
-//        $store->expects($this->exactly(2))->method('increaseError');
         $consumer = new JobConsumer(array(
             'storage' => $store,
             'timeout' => 23,

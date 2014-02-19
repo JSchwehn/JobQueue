@@ -20,7 +20,8 @@ class CheckUniverse extends ConsumerCommand
      */
     public function execute($parameter, $remoteCall = false)
     {
-        // TODO: Implement execute() method.
+        $foo = $this->getInitParameters();
+
         return $this->Parent()->callRemoteCommand('Example', 'DoSomething', array('foo' => 'bar'));
 
     }

@@ -43,15 +43,10 @@ namespace JobQueue {
         {
             return $this->_config['consumerBaseDir'];
         }
-//        /**
-//         * Return a namespace prefix. Could be used to move the consumer folder where ever you like
-//         * @return mixed
-//         */
-//        public function getNamespace()
-//        {
-//            return $this->_config['namespace'];
-//        }
 
+        /**
+         * @return mixed
+         */
         public function getCommandFolder()
         {
             return $this->_config['commandFolder'];

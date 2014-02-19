@@ -17,7 +17,7 @@ namespace JobQueue {
 
         protected $parameters = null;
 
-        public function __construct($parameters = null, \JobQueue\Consumers $parent = null)
+        public function __construct($parameters = null, Consumers $parent = null)
         {
             $this->parameters = $parameters;
             $this->parent = $parent;
@@ -42,20 +42,5 @@ namespace JobQueue {
          */
         abstract public function execute($parameter, $remoteCall = false);
 
-//        protected function checkParameters(array $parameters)
-//        {
-//            foreach ($parameters as $parameterName => $parameter) {
-//                switch ($parameterName) {
-//                    case 'refId':
-//                        $this->refId = $parameter;
-//                        break;
-//                }
-//            }
-//        }
-//
-//        protected function returnAnswer($answer = null)
-//        {
-//            return $answer;
-//        }
     }
 }
