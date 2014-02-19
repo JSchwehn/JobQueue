@@ -298,7 +298,8 @@ namespace JobQueue\Storage {
                 $errorCnt = (int)$this->_config['maxErrorCount'] + 1;
             }
             $sth = $this->Db()->prepare(
-                'UPDATE ' . $this->getQueueName() . ' SET errorCount = errorCount+$errorCnt, lastError = ? WHERE id=?'
+                'UPDATE ' . $this->getQueueName(
+                ) . ' SET errorCount = errorCount+' . $errorCnt . ', lastError = ? WHERE id=?'
             );
             if (false === $sth->execute(array($errorMessage, (int)$jobId))) {
                 throw new \Exception('Could not set error for job ID: #' . $jobId . ' Message was: ' . $errorMessage);
