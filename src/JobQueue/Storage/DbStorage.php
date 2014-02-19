@@ -90,7 +90,7 @@ namespace JobQueue\Storage {
                 $status = 'new';
             }
             $sth = $this->Db()->prepare(
-                "INSERT INTO " . $this->getQueueName() . " SET `consumerName`=?, `command`=?, `data`=?, `status`=?"
+                'INSERT INTO  ' . $this->getQueueName() . 'SET `consumerName`=?, `command`=?, `data`=?, `status`=?'
             );
             $parameters = json_encode($parameters);
             $sth->execute(array($consumerName, $command, $parameters, $status));
@@ -107,7 +107,7 @@ namespace JobQueue\Storage {
         public function listJobs()
         {
             $sth = $this->Db()->prepare(
-                "SELECT `id`, `consumerName`, `command`, `status`, `data` FROM " . $this->getQueueName()
+                'SELECT `id`, `consumerName`, `command`, `status`, `data` FROM ' . $this->getQueueName()
             );
             $sth->execute();
             $retVal = array();
@@ -131,7 +131,7 @@ namespace JobQueue\Storage {
          */
         public function deleteJob($jobId)
         {
-            $sth = $this->Db()->prepare("DELETE FROM " . $this->getQueueName() . " WHERE id=?");
+            $sth = $this->Db()->prepare('DELETE FROM ' . $this->getQueueName() . ' WHERE id=?');
             if (false === $sth->execute(array((int)$jobId))) {
                 throw new \Exception('Could not delete job #' . (int)$jobId);
             }
@@ -148,8 +148,7 @@ namespace JobQueue\Storage {
         public function getJobsByConsumerName($consumerName)
         {
             $sth = $this->Db()->prepare(
-                "SELECT id, consumerName, command, status, `data` FROM " . $this->getQueueName(
-                ) . ' WHERE consumerName=?'
+                'SELECT id, consumerName, command, status, `data` FROM ' . $this->getQueueName() . ' WHERE consumerName=?'
             );
             $sth->execute(array($consumerName));
             $retVal = array();
@@ -173,7 +172,7 @@ namespace JobQueue\Storage {
         public function getJobsByCommand($command)
         {
             $sth = $this->Db()->prepare(
-                "SELECT id, consumerName, command, status, `data` FROM " . $this->getQueueName() . ' WHERE command=?'
+                'SELECT id, consumerName, command, status, `data` FROM ' . $this->getQueueName() . ' WHERE command=?'
             );
             $sth->execute(array($command));
             $retVal = array();
@@ -198,7 +197,7 @@ namespace JobQueue\Storage {
          */
         public function updateJob($jobId, $parameters = array())
         {
-            $sth = $this->Db()->prepare("UPDATE " . $this->getQueueName() . " SET `data`=? WHERE id=?");
+            $sth = $this->Db()->prepare('UPDATE ' . $this->getQueueName() . ' SET `data`=? WHERE id=?');
             if (false === $sth->execute(array(json_encode($parameters), $jobId))) {
                 throw new \Exception('Could not update job #' . (int)$jobId);
             }
@@ -217,7 +216,7 @@ namespace JobQueue\Storage {
         public function setJobStatus($jobId, $status = 'new')
         {
             $sth = $this->Db()->prepare(
-                "UPDATE " . $this->getQueueName() . " SET `status` = ? WHERE id=?"
+                'UPDATE ' . $this->getQueueName() . ' SET `status` = ? WHERE id=?'
             );
             if (false === $sth->execute(array($status, (int)$jobId))) {
                 throw new \Exception('Could not change job status id #' . $jobId);
@@ -239,20 +238,20 @@ namespace JobQueue\Storage {
          */
         public function getNextJob($filter = '')
         {
-            $sql = "
+            $sql = '
                 SELECT id, consumerName, command, status, data, errorCount
-                FROM " . $this->getQueueName() . "
+                FROM ' . $this->getQueueName() . '
                 WHERE 1
-                    AND lockedAt = '0000-00-00 00:00:00'
+                    AND lockedAt = \'0000-00-00 00:00:00\'
                     AND errorCount < ?
                     AND consumerName LIKE ?
-                    AND (status = 'new' OR status='error')
+                    AND (status = \'new\' OR status=\'error\')
                     AND (
-                        expireDate = '0000-00-00 00:00:00' OR expireDate > NOW()
+                        expireDate = \'0000-00-00 00:00:00\' OR expireDate > NOW()
                     )
                 ORDER BY dateCreated DESC
                 LIMIT 1
-            ";
+            ';
             $sth = $this->Db()->prepare($sql);
             $sth->execute(array($this->_config['maxErrorCount'], '%' . $filter . '%'));
             $data = $sth->fetch(\PDO::FETCH_ASSOC);
@@ -274,7 +273,7 @@ namespace JobQueue\Storage {
          */
         public function getErrorCount($jobId)
         {
-            $sth = $this->Db()->prepare("SELECT errorCount FROM " . $this->getQueueName() . " WHERE id=?");
+            $sth = $this->Db()->prepare('SELECT errorCount FROM ' . $this->getQueueName() . ' WHERE id=?');
 
             if (false === $sth->execute(array((int)$jobId))) {
                 throw new \Exception('Could not get error count for job ID: #' . $jobId);
@@ -299,7 +298,7 @@ namespace JobQueue\Storage {
                 $errorCnt = (int)$this->_config['maxErrorCount'] + 1;
             }
             $sth = $this->Db()->prepare(
-                "UPDATE " . $this->getQueueName() . " SET errorCount = errorCount+$errorCnt, lastError = ? WHERE id=?"
+                'UPDATE ' . $this->getQueueName() . ' SET errorCount = errorCount+$errorCnt, lastError = ? WHERE id=?'
             );
             if (false === $sth->execute(array($errorMessage, (int)$jobId))) {
                 throw new \Exception('Could not set error for job ID: #' . $jobId . ' Message was: ' . $errorMessage);
@@ -319,7 +318,7 @@ namespace JobQueue\Storage {
          */
         public function lockElement($jobId)
         {
-            $sth = $this->Db()->prepare("UPDATE " . $this->getQueueName() . " SET lockedAt = NOW() WHERE id = ?");
+            $sth = $this->Db()->prepare('UPDATE ' . $this->getQueueName() . ' SET lockedAt = NOW() WHERE id = ?');
             if (false === $sth->execute(array((int)$jobId))) {
                 throw new \Exception('Could not lock job ID #' . (int)$jobId);
             }
@@ -337,7 +336,7 @@ namespace JobQueue\Storage {
         public function unlockElement($jobId)
         {
             $sth = $this->Db()->prepare(
-                "UPDATE " . $this->getQueueName() . " SET lockedAt = '0000-00-00 00:00:00' WHERE id = ?"
+                'UPDATE ' . $this->getQueueName() . ' SET lockedAt = \'0000-00-00 00:00:00\' WHERE id = ?'
             );
             if (false === $sth->execute(array((int)$jobId))) {
                 throw new \Exception('Could not unlock job ID #' . (int)$jobId);
@@ -355,7 +354,7 @@ namespace JobQueue\Storage {
          */
         public function removeElement($jobId)
         {
-            $sth = $this->Db()->prepare("DELETE FROM " . $this->getQueueName() . " WHERE id = ? LIMIT 1");
+            $sth = $this->Db()->prepare('DELETE FROM ' . $this->getQueueName() . ' WHERE id = ? LIMIT 1');
             if (false === $sth->execute(array((int)$jobId))) {
                 throw new \Exception('Could not delete job ID #' . (int)$jobId);
             }
@@ -371,7 +370,7 @@ namespace JobQueue\Storage {
          */
         public function garbageCollection()
         {
-            $sth = $this->Db()->prepare("DELETE FROM " . $this->getQueueName() . " WHERE  expireDate < NOW() ");
+            $sth = $this->Db()->prepare('DELETE FROM ' . $this->getQueueName() . ' WHERE  expireDate < NOW() ');
             if (false === $sth->execute(array())) {
                 throw new \Exception('Could not remove trash from queue');
             }
