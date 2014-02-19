@@ -7,7 +7,9 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace JobQueue\Consumers {
+namespace JobQueue {
+    use JobQueue\Exceptions\NotFoundException;
+
     abstract class Consumers
     {
 
@@ -15,11 +17,51 @@ namespace JobQueue\Consumers {
         protected $loadedCommands = array();
         /** @var array Global Memory */
         protected $global = array();
+        /** @var array */
+        private $_config = array();
+
+
+        public function __construct(array $parameters = array())
+        {
+            $this->_config = array_merge($parameters, $this->_config);
+            if (!isset($this->_config['consumerBaseDir'])) {
+                $this->_config['consumerBaseDir'] = __DIR__ . "/Consumers/";
+            }
+            if (!isset($this->_config['namespace'])) {
+                $this->_config['namespace'] = '\JobQueue';
+            }
+            if (!isset($this->_config['commandFolder'])) {
+                $this->_config['commandFolder'] = '/Commands/';
+            }
+        }
+
+        /**
+         * Returns the path where the consumer modules are located
+         * @return String
+         */
+        public function getConsumerBaseDir()
+        {
+            return $this->_config['consumerBaseDir'];
+        }
+//        /**
+//         * Return a namespace prefix. Could be used to move the consumer folder where ever you like
+//         * @return mixed
+//         */
+//        public function getNamespace()
+//        {
+//            return $this->_config['namespace'];
+//        }
+
+        public function getCommandFolder()
+        {
+            return $this->_config['commandFolder'];
+        }
 
         /**
          * @param $command
          * @param $parameters
          * @param null $className
+         * @throws Exceptions\NotFoundException
          * @throws \Exception
          */
         protected function loadCommand($command, $parameters, $className = null)
@@ -28,21 +70,18 @@ namespace JobQueue\Consumers {
                 $className = $this->getClassName(get_class($this));
                 $className = $className['classname'];
             }
-            $includeFile = __DIR__ . "/Consumers/" . $className . "/Commands/" . $command . ".php";
+            $includeFile = $this->getConsumerBaseDir() . $className . $this->getCommandFolder() . $command . ".php";
             if (isset($this->loadedCommands[$className][$command])) {
                 throw new \Exception('Recursion detected.' . $includeFile . ' already exists.');
             }
             if (!is_readable($includeFile)) {
-                throw new \Exception('Could not load Command ' . $command . ' (not readable) ');
+                throw new NotFoundException('Could not load Command ' . $command . ' (not readable) ');
             }
             require_once $includeFile;
-            $class = '\JobQueue\\' . $className . '\Command\\' . $command;
+
+            $class = $command;
+//            $class = $this->getNamespace() . '\\ConsumerCommand\\' . $className . $this->getCommandFolder() . $command;
             $instance = new $class($parameters, $this);
-            if (!$instance instanceof \JobQueue\ConsumerCommand) {
-                throw new \Exception('Could not load Command ' . $command . ' wrong instance (' . get_class(
-                        $instance
-                    ) . ')');
-            }
             $this->loadedCommands[$className][$command] = $instance;
         }
 
@@ -71,12 +110,13 @@ namespace JobQueue\Consumers {
         {
             $this->loadCommand($command, $parameters, $className);
             $retVal = $this->loadedCommands[$className][$command]->execute($parameters, true);
-            $this->removeCommand($command, $className);
+            $this->removeCommand($command);
 
             return $retVal;
         }
 
         /**
+         * Removes a command from the command buffer. Used for remoteCall.
          * @param $command
          * @param null $className
          */
@@ -108,9 +148,7 @@ namespace JobQueue\Consumers {
                 $this->loadCommand($name, $argument);
             }
 
-            $retVal = $this->loadedCommands[$className][$name]->execute($argument);
-
-            return $retVal;
+            return $this->loadedCommands[$className][$name]->execute($argument);
         }
 
         /**

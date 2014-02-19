@@ -20,8 +20,19 @@ namespace JobQueue {
             )
         );
 
-        static public function getConfig()
+        public function __construct(array $parameters = array())
         {
+            if (!empty($parameters)) {
+                self::$_config = array_merge(self::$_config, $parameters);
+            }
+        }
+
+        static public function getConfig(array $parameters = array())
+        {
+            if (!empty($parameters)) {
+                self::$_config = array_merge(self::$_config, $parameters);
+            }
+
             return self::$_config;
         }
 

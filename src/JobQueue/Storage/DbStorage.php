@@ -15,11 +15,11 @@ namespace JobQueue\Storage {
     use JobQueue\Exceptions\MissingConfigException;
     use JobQueue\QueueStorage;
 
-    class DbQueueStorage implements QueueStorage
+    class DbStorage implements QueueStorage
     {
         /** @var \PDO */
         private $_db = null;
-        private $_config = array();
+        private $_config = array('maxErrorCount' => 3);
 
         /**
          * If you already using the PDO DB layer in your application just pass the parameter
@@ -41,26 +41,16 @@ namespace JobQueue\Storage {
         public function __construct(array $parameters)
         {
             $this->_config = array_merge($this->_config, $parameters);
+
             if (isset($this->_config['pdo']) && $this->_config['pdo'] instanceof \PDO) {
                 $this->_db = $this->_config['pdo'];
-            } elseif (isset($this->_config['dsn']) && is_string($this->_config['dsn'])) {
-                $options = array();
-                if (is_array($this->_config['dbOptions'])) {
-                    $options = $this->_config['dbOptions'];
-                }
-                if (!isset($this->_config['dbUsername'])) {
-                    throw new MissingConfigException('Database username is missing. A username and password are needed if a DSN is provided.');
-                }
-                if (!isset($this->_config['dbPassword'])) {
-                    throw new MissingConfigException('Database password is missing. A username and password are needed if a DSN is provided.');
-                }
-                $this->_db = new \PDO($this->_config['dsn'], $this->_config['dbUsername'], $this->_config['password'], $options);
             } else {
-                throw new MissingConfigException('Need either a PDO instance (pdo) or a data source name (dsn) to access the database.');
+                throw new MissingConfigException('Need a PDO instance (pdo) to access the database.');
             }
             if (!isset($this->_config['queueName'])) {
                 throw new MissingConfigException('Need the name of the queue table to save the messages. queueName is missing');
             }
+
         }
 
         /**
@@ -70,7 +60,7 @@ namespace JobQueue\Storage {
          */
         public function getQueueName()
         {
-            return $this->quoteIdentifier($this->_config['dbName']);
+            return $this->quoteIdentifier($this->_config['queueName']);
         }
 
         /**
@@ -125,7 +115,7 @@ namespace JobQueue\Storage {
                 $retVal[] = array(
                     'consumerName' => $job['consumerName'],
                     'command' => $job['command'],
-                    'data' => json_decode($job['data'])
+                    'data' => json_decode($job['data'], true)
                 );
             }
 
@@ -136,13 +126,17 @@ namespace JobQueue\Storage {
          * Removes a job from the queue
          *
          * @param $jobId
+         * @throws \Exception
          * @return boolean
          */
         public function deleteJob($jobId)
         {
             $sth = $this->Db()->prepare("DELETE FROM " . $this->getQueueName() . " WHERE id=?");
+            if (false === $sth->execute(array((int)$jobId))) {
+                throw new \Exception('Could not delete job #' . (int)$jobId);
+            }
 
-            return $sth->execute(array((int)$jobId));
+            return $this;
         }
 
         /**
@@ -163,7 +157,7 @@ namespace JobQueue\Storage {
                 $retVal[] = array(
                     'consumerName' => $job['consumerName'],
                     'command' => $job['command'],
-                    'data' => json_decode($job['data'])
+                    'data' => json_decode($job['data'], true)
                 );
             }
 
@@ -174,6 +168,7 @@ namespace JobQueue\Storage {
          * Returns an array of jobs with a given command.
          *
          * @param String $command
+         * @return array
          */
         public function getJobsByCommand($command)
         {
@@ -186,9 +181,11 @@ namespace JobQueue\Storage {
                 $retVal[] = array(
                     'consumerName' => $job['consumerName'],
                     'command' => $job['command'],
-                    'data' => json_decode($job['data'])
+                    'data' => json_decode($job['data'], true)
                 );
             }
+
+            return $retVal;
         }
 
         /**
@@ -196,31 +193,37 @@ namespace JobQueue\Storage {
          *
          * @param $jobId
          * @param array $parameters
+         * @return bool
          * @throws \Exception
          */
         public function updateJob($jobId, $parameters = array())
         {
             $sth = $this->Db()->prepare("UPDATE " . $this->getQueueName() . " SET `data`=? WHERE id=?");
-            if (!$sth->execute(array(json_encode($parameters), $jobId))) {
+            if (false === $sth->execute(array(json_encode($parameters), $jobId))) {
                 throw new \Exception('Could not update job #' . (int)$jobId);
             }
+
+            return $this;
         }
 
         /**
-         * Set a new status for a given job
+         * Set a status for a given job
          *
          * @param $jobId
          * @param string $status
+         * @return bool
          * @throws \Exception
          */
         public function setJobStatus($jobId, $status = 'new')
         {
             $sth = $this->Db()->prepare(
-                "UPDATE " . $this->getQueueName() . " SET `status` = ?, lastError = ? WHERE id=?"
+                "UPDATE " . $this->getQueueName() . " SET `status` = ? WHERE id=?"
             );
-            if (!$sth->execute(array($status, (int)$jobId))) {
-                throw new \Exception('Could not set error.');
+            if (false === $sth->execute(array($status, (int)$jobId))) {
+                throw new \Exception('Could not change job status id #' . $jobId);
             }
+
+            return $this;
         }
 
         /**
@@ -266,31 +269,43 @@ namespace JobQueue\Storage {
          * Returns the number of errors occurred for an element
          *
          * @param $jobId
+         * @throws \Exception
          * @return int
          */
         public function getErrorCount($jobId)
         {
             $sth = $this->Db()->prepare("SELECT errorCount FROM " . $this->getQueueName() . " WHERE id=?");
-            $sth->execute(array((int)$jobId));
+
+            if (false === $sth->execute(array((int)$jobId))) {
+                throw new \Exception('Could not get error count for job ID: #' . $jobId);
+            }
 
             return (int)$sth->fetchColumn();
         }
 
         /**
-         * Increases the error count and supply an error message if one is given.
+         * Increases the error count and supply an error message if one is given. Set $final to true if no retry is necessary.
          *
          * @param $jobId
          * @param string $errorMessage
+         * @param bool $final
          * @throws \Exception
+         * @return bool
          */
-        public function increaseError($jobId, $errorMessage = '')
+        public function increaseError($jobId, $errorMessage = '', $final = false)
         {
-            $sth = $this->Db()->prepare(
-                "UPDATE " . $this->getQueueName() . " SET errorCount = errorCount+1, lastError = ? WHERE id=?"
-            );
-            if (!$sth->execute(array($errorMessage, (int)$jobId))) {
-                throw new \Exception('Could not set error for job ID: ' . $jobId);
+            $errorCnt = 1;
+            if ($final) {
+                $errorCnt = (int)$this->_config['maxErrorCount'] + 1;
             }
+            $sth = $this->Db()->prepare(
+                "UPDATE " . $this->getQueueName() . " SET errorCount = errorCount+$errorCnt, lastError = ? WHERE id=?"
+            );
+            if (false === $sth->execute(array($errorMessage, (int)$jobId))) {
+                throw new \Exception('Could not set error for job ID: #' . $jobId . ' Message was: ' . $errorMessage);
+            }
+
+            return $this;
         }
 
         /**
@@ -299,20 +314,24 @@ namespace JobQueue\Storage {
          * An element is locked when a lockedAt date is set and the element status is 'new'
          *
          * @param $jobId
+         * @return bool
          * @throws \Exception
          */
         public function lockElement($jobId)
         {
             $sth = $this->Db()->prepare("UPDATE " . $this->getQueueName() . " SET lockedAt = NOW() WHERE id = ?");
-            if (!$sth->execute(array((int)$jobId))) {
-                throw new \Exception('Could not lock job ID ' . (int)$jobId);
+            if (false === $sth->execute(array((int)$jobId))) {
+                throw new \Exception('Could not lock job ID #' . (int)$jobId);
             }
+
+            return $this;
         }
 
         /**
          * To remove the lock the lockedAt timestamp will be set to 0000-00-00 00:00:00
          *
          * @param $jobId
+         * @return bool
          * @throws \Exception
          */
         public function unlockElement($jobId)
@@ -320,23 +339,28 @@ namespace JobQueue\Storage {
             $sth = $this->Db()->prepare(
                 "UPDATE " . $this->getQueueName() . " SET lockedAt = '0000-00-00 00:00:00' WHERE id = ?"
             );
-            if (!$sth->execute(array((int)$jobId))) {
-                throw new \Exception('Could not unlock job ID ' . (int)$jobId);
+            if (false === $sth->execute(array((int)$jobId))) {
+                throw new \Exception('Could not unlock job ID #' . (int)$jobId);
             }
+
+            return $this;
         }
 
         /**
          * If everything was processed successfully, then the element MUST be removed.
          *
          * @param $jobId
+         * @return bool
          * @throws \Exception
          */
         public function removeElement($jobId)
         {
             $sth = $this->Db()->prepare("DELETE FROM " . $this->getQueueName() . " WHERE id = ? LIMIT 1");
-            if (!$sth->execute(array((int)$jobId))) {
-                throw new \Exception('Could not delete job ID ' . (int)$jobId);
+            if (false === $sth->execute(array((int)$jobId))) {
+                throw new \Exception('Could not delete job ID #' . (int)$jobId);
             }
+
+            return $this;
         }
 
         /**
@@ -348,9 +372,11 @@ namespace JobQueue\Storage {
         public function garbageCollection()
         {
             $sth = $this->Db()->prepare("DELETE FROM " . $this->getQueueName() . " WHERE  expireDate < NOW() ");
-            if (!$sth->execute(array())) {
+            if (false === $sth->execute(array())) {
                 throw new \Exception('Could not remove trash from queue');
             }
+
+            return $this;
         }
 
         /**

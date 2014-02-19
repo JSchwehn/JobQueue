@@ -6,6 +6,7 @@
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
+ * @ignore
  */
 namespace JobQueue {
     /**
@@ -110,13 +111,13 @@ namespace JobQueue {
         public function getErrorCount($jobId);
 
         /**
-         * Increases the error count and supply an error message if one is given.
+         * Increases the error count and supply an error message if one is given. Set Final if no retry is necessary.
          *
          * @param $jobId
          * @param string $errorMessage
-         * @throws \Exception
+         * @param bool $final
          */
-        public function increaseError($jobId, $errorMessage = '');
+        public function increaseError($jobId, $errorMessage = '', $final = false);
 
         /**
          * To avoid a collision the element will be locked and other processes MUST not

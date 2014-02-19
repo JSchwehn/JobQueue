@@ -11,4 +11,4 @@
 
 $loader = require __DIR__ . "/../vendor/autoload.php";
 $loader->add('JobQueue\\', __DIR__);
-echo "foo";
+$loader->add('JobQueue\ConsumerCommand\\', __DIR__ . '/Consumers/');
