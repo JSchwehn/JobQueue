@@ -7,7 +7,7 @@
 # What is JobQueue
 JobQueue implements a producer/consumer pattern to build a small framework for an asynchronous communication system or a
 way to glue together a MOM - [Message Orientated Middleware](http://en.wikipedia.org/wiki/Message-oriented_middleware).
-Its message standard allowed a distributed system to communicate between sub systems with out blocking the communication channel.
+The message que system allows a distributed system to communicate between sub systems with out blocking the communication channel.
 It is highly inspired by JMS the [Java Message Service](http://en.wikipedia.org/wiki/Java_Message_Service).
 
 ## Notes to the current version
