@@ -1,0 +1,4 @@
+.idea
+.git
+phpunit.xml
+src/JobQueue/bootstrap.php
