@@ -1,5 +1,29 @@
+# JobQueue - Message Orientated Middleware for PHP
+
 
 [![Build Status](https://api.travis-ci.org/JSchwehn/JobQueue.png?branch=master)](https://travis-ci.org/JSchwehn/JobQueue)
 [![Coverage Status](https://coveralls.io/repos/JSchwehn/JobQueue/badge.png)](https://coveralls.io/r/JSchwehn/JobQueue)
 
+# What is JobQueue
+JobQueue implements a producer/consumer pattern to build a small framework for an asynchronous communication system or a
+way to glue together a MOM - [Message Orientated Middleware](http://en.wikipedia.org/wiki/Message-oriented_middleware).
+Its message standard allowed a distributed system to communicate between sub systems with out blocking the communication channel.
+It is highly inspired by JMS the [Java Message Service](http://en.wikipedia.org/wiki/Java_Message_Service).
+
+## Notes to the current version
+To this date (late Feb. 2014) you are looking at the very first public available implementation and I strongly suggest to *not* use this in a live production environment.
+But if you like to try it out, feel free to have a go. If you have any suggestions feel free to contact me or open a bug report.
+
+# Install
+In this version there will be no composer install supported - lazy me.
+
+
+##Direct download from Github
 tbd.
+
+##Fork me
+tbd.
+
+##Composer
+tbd.
+

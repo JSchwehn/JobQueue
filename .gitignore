@@ -1,4 +1,6 @@
 .idea
 .git
+.DS_Store
+composer.lock
 phpunit.xml
 src/JobQueue/bootstrap.php
