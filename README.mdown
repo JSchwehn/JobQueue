@@ -1,3 +1,5 @@
+
 [![Build Status](https://travis-ci.org/JSchwehn/JobQueue.png?branch=master)](https://travis-ci.org/JSchwehn/JobQueue)
+[![Coverage Status](https://coveralls.io/repos/JSchwehn/JobQueue/badge.png)](https://coveralls.io/r/JSchwehn/JobQueue)
 
 tbd.
