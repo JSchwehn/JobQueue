@@ -158,7 +158,6 @@ namespace JobQueue {
             require_once $includeFile;
             $class = $this->getNamespace() . '\\' . $consumerName . '\\' . $consumerName;
             // load a new consumer - a concrete implementation of Consumers.php
-            echo "Loading $class\n";
             $consumer = new $class($this->_config);
 
             return $consumer;
