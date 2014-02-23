@@ -1,19 +1,19 @@
 {
-    "name": "JobQueue/JobQueue",
-    "description": "Asynchronous Message/Job Queue",
+    "name": "JSchwehn/JobQueue",
+    "description": "Message Oriented Middleware for PHP 5.4+",
     "minimum-stability": "alpha",
-    "keywords": ["Queue", "Message", "Job"],
+    "keywords": ["Queue", "Message", "Job", "Middleware", "MOM"],
     "homepage": "http://github.com/JSchwehn/JobQueue",
     "license": "MIT",
     "authors": [
         {
             "name": "Jens Schwehn",
             "email": "jens@ldk.net",
-            "homepage": "http://ldk.net"
+            "homepage": "http://github.com/JSchwehn/JobQueue"
         }
     ],
     "require": {
-        "php": ">=5.3.0"
+        "php": ">=5.4.0"
     },
     "require-dev": {
         "phpunit/phpunit": "3.7.*",
