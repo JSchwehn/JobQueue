@@ -9,7 +9,6 @@
  */
 namespace JobQueue {
 
-    use JobQueue\Exceptions\CommandNotFoundException;
     use JobQueue\Exceptions\MissingConfigException;
     use JobQueue\Exceptions\NotFoundException;
 
